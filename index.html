@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Mermaid Viewer</title>
+  </head>
+  <body class="p-5">
+    <pre id="mermaid" style="text-align: center"></pre>
+    <script type="module">
+      import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs";
+
+      mermaid.initialize({ startOnLoad: false });
+
+      const drawDiagram = async function () {
+        const BASE64 = "base64";
+        const url = new URL(document.URL);
+        if (!url.searchParams.has(BASE64)) return;
+        const encoded = url.searchParams.get(BASE64);
+        const element = document.querySelector("#mermaid");
+
+        try {
+          const str = atob(encoded);
+          const { svg } = await mermaid.render("flowchart", str);
+          element.innerHTML = svg;
+        } catch (e) {
+          console.error(
+            "Invalid base64 string. Ensure your base64 string is URL Encoded.",
+            e
+          );
+        }
+      };
+
+      await drawDiagram();
+    </script>
+  </body>
+</html>
