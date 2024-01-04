@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <title>Tools</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet"
+        integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"
+        integrity="sha384-C6RzsynM9kWDrMNeT87bh95OGNyZPhcTNXj1NW7RuBCsyN/o0jlpcV8Qyq46cDfL"
+        crossorigin="anonymous"></script>
+
+    <script>
+        function generateUUID() { // Public Domain/MIT
+            var d = new Date().getTime();//Timestamp
+            var d2 = ((typeof performance !== 'undefined') && performance.now && (performance.now() * 1000)) || 0;//Time in microseconds since page-load or 0 if unsupported
+            return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
+                var r = Math.random() * 16;//random number between 0 and 16
+                if (d > 0) {//Use timestamp until depleted
+                    r = (d + r) % 16 | 0;
+                    d = Math.floor(d / 16);
+                } else {//Use microseconds since page-load if supported
+                    r = (d2 + r) % 16 | 0;
+                    d2 = Math.floor(d2 / 16);
+                }
+                return (c === 'x' ? r : (r & 0x3 | 0x8)).toString(16);
+            });
+        }
+
+        function insertNewRow() {
+            form_table_body = document.getElementById("form-table-body");
+            new_uuid = generateUUID();
+            new_row = document.createElement("tr")
+            new_row.id = new_uuid
+
+            action_col = document.createElement("td")
+            delete_button = document.createElement("button")
+            delete_button.setAttribute("onclick", "deleteRow(\"" + new_uuid + "\")")
+            delete_button.setAttribute("class", "btn btn-danger btn-sm")
+            delete_button.setAttribute("type", "button")
+            delete_button.innerHTML = "<b>X</b>"
+            action_col.appendChild(delete_button)
+
+            item_name_col = document.createElement("td")
+            item_name_input = document.createElement("input")
+            item_name_input.setAttribute("class", "form-control")
+            item_name_input.setAttribute("name", "item-name")
+            item_name_input.setAttribute("type", "text")
+            item_name_col.appendChild(item_name_input)
+
+            item_price_col = document.createElement("td")
+            item_price_input = document.createElement("input")
+            item_price_input.setAttribute("class", "form-control")
+            item_price_input.setAttribute("name", "item-name")
+            item_price_input.setAttribute("type", "number")
+            item_price_col.appendChild(item_price_input)
+
+            new_row.appendChild(action_col)
+            new_row.appendChild(item_name_col)
+            new_row.appendChild(item_price_col)
+
+            form_table_body.appendChild(new_row)
+        }
+
+        function deleteRow(id) {
+            delete_row = document.getElementById(id)
+            delete_row.remove()
+        }
+
+        function combRep(arr, l) {
+            if (l === void 0) l = arr.length; // Length of the combinations
+            var data = Array(l),             // Used to store state
+                results = [];                // Array of results
+            (function f(pos, start) {        // Recursive function
+                if (pos === l) {                // End reached
+                    results.push(data.slice());  // Add a copy of data to results
+                    return;
+                }
+                for (var i = start; i < arr.length; ++i) {
+                    data[pos] = arr[i];          // Update data
+                    f(pos + 1, i);                 // Call f recursively
+                }
+            })(0, 0);                        // Start at index 0
+            return results;                  // Return results
+        }
+
+        function renderOutputTable(available_balance_input, item_price_mapping, min_diff, closest_combination)
+        {
+            let output_min_diff = document.getElementById("mini-balance")
+            output_min_diff.innerHTML = min_diff.toFixed(2)
+
+            let output_items_table = document.getElementById("purchase-recommendation")
+            output_items_table.innerHTML = ""
+
+            for(combo in closest_combination)
+            {
+                let new_row = document.createElement("tr")
+
+                let item_name_col = document.createElement("td")
+                item_name_col.innerHTML = item_price_mapping[combo].toString()
+
+                let item_price_col = document.createElement("td")
+                item_price_col.innerHTML = combo
+
+                let item_qty_col = document.createElement("td")
+                item_qty_col.innerHTML = closest_combination[combo]
+
+                new_row.appendChild(item_name_col)
+                new_row.appendChild(item_price_col)
+                new_row.appendChild(item_qty_col)
+
+                output_items_table.appendChild(new_row)
+            }
+        }
+
+        function calculate() {
+
+            let available_balance_input = document.getElementById("balance_amount")
+            let available_balance = parseFloat(available_balance_input.value)
+
+            let item_rows = document.getElementById("form-table-body")
+            let prices = []
+            let item_price_mapping = {}
+            for (row of item_rows.rows) {
+                item_name = row.cells[1].children[0].value
+                item_price = parseFloat(row.cells[2].children[0].value)
+                if (item_price in item_price_mapping)
+                {
+                    item_price_mapping[item_price].push(item_name)
+                }
+                else
+                {
+                    item_price_mapping[item_price] = [item_name]
+                    prices.push(item_price)
+                }
+            }
+            
+            let all_possible_price_combo = []
+            for(let i=prices.length; i > 0 ; i--)
+            {
+                // console.log(i)
+                all_possible_price_combo = [...all_possible_price_combo, ...combRep(prices,i)]
+            }
+
+            // console.log(all_possible_price_combo)
+
+            let closest_combination = []
+            let min_diff = available_balance * 2
+            let all_closest_combination = []
+           
+            for (let combo of all_possible_price_combo)
+            {
+                let current_sum = combo.reduce((a, b) => a + b)
+                let current_diff = Math.abs(available_balance - current_sum)
+                if(current_diff <= min_diff && current_sum <= available_balance)
+                {
+                    min_diff = current_diff
+                    closest_combination = combo
+                    all_closest_combination.push(combo)
+                }
+            }
+
+            console.log(all_closest_combination)
+
+            let group_price = {}
+
+            for(price of closest_combination)
+            {
+                if(price in group_price)
+                {
+                    group_price[price].push(price)
+                }
+                else
+                {
+                    group_price[price] = [price]
+                }
+            }
+            
+            for(price in group_price)
+            {
+                group_price[price] = group_price[price].length
+            }
+
+            renderOutputTable(available_balance_input, item_price_mapping, min_diff,group_price)
+        }
+    </script>
+</head>
+
+<body onload="insertNewRow()">
+
+    <div class="jumbotron text-center">
+        <p>Maximise the number of items that can be purchased with amount.</p>
+    </div>
+
+    <div class="container">
+        <div class="row">
+            <div class="col-sm-6">
+                <form action="/action_page.php">
+                    Available Balance: <input id="balance_amount" type="number" class="form-control"
+                        name="balance_amount">
+                    <br>
+                    Please list the items you are planning to purchase:
+                    <table class="table table-bordered">
+                        <thead>
+                            <tr>
+                                <th></th>
+                                <th>Item Name</th>
+                                <th>Price</th>
+                            </tr>
+                        </thead>
+                        <tbody id="form-table-body">
+                        </tbody>
+                    </table>
+                    <button type="button" class="btn btn-secondary btn-sm" onclick="insertNewRow()"><b>+</b> New
+                        Item</button><br>
+
+                    <span class="float-end">
+                        <button type="button" class="btn btn-primary btn-sm" onclick="calculate()">Calculate</button>
+                    </span>
+                </form>
+            </div>
+            <div class="col-sm-6">
+                Output:<br>
+                Minimum Possible Balance: <span id="mini-balance"></span>
+
+                <table class="table table-bordered">
+                    <thead>
+                        <tr>
+                            <th>Item Name</th>
+                            <th>Price</th>
+                            <th>Qty</th>
+                        </tr>
+                    </thead>
+                    <tbody id="purchase-recommendation">
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+</body>
+
+</html>
