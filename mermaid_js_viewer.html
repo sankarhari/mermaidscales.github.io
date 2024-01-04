@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Mermaid Viewer</title>
+  </head>
+  <body class="p-5">
+    <pre id="mermaid" style="text-align: center"></pre>
+    <script type="module">
+      import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs";
+
+      mermaid.initialize({ startOnLoad: false });
+
+      const drawDiagram = async function () {
+        const BASE64 = "base64";
+        const url = new URL(document.URL);
+        const element = document.querySelector("#mermaid");
+        if (!url.searchParams.has(BASE64)) 
+        {
+          element.innerHTML = "Please pass \"base64\" parameter to view the chart.<br>Note: Mermaid JS mark down should be base64 and URL encoded<br><a href=\"mermaid_js_viewer.html?base64=Zmxvd2NoYXJ0IFRECiAgICBBW0NocmlzdG1hc10gLS0%2BfEdldCBtb25leXwgQihHbyBzaG9wcGluZykKICAgIEIgLS0%2BIEN7TGV0IG1lIHRoaW5rfQogICAgQyAtLT58T25lfCBEW0xhcHRvcF0KICAgIEMgLS0%2BfFR3b3wgRVtpUGhvbmVdCiAgICBDIC0tPnxUaHJlZXwgRltmYTpmYS1jYXIgQ2FyXQogIA%3D%3D%0A\">Sample</a>";
+          return
+        }
+        const encoded = url.searchParams.get(BASE64);
+        try {
+          const str = atob(encoded);
+          const { svg } = await mermaid.render("flowchart", str);
+          element.innerHTML = svg;
+        } catch (e) {
+          console.error(
+            "Invalid base64 string. Ensure your base64 string is URL Encoded.",
+            e
+          );
+        }
+      };
+
+      await drawDiagram();
+    </script>
+  </body>
+</html>
